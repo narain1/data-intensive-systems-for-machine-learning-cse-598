@@ -4,3 +4,10 @@ src/assignment1/logs/
 src/assignment1/data/
 data/
 logs/
+
+# .gitignore
+
+# Pyhon byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
