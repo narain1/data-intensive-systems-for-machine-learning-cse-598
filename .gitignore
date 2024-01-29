@@ -1,3 +1,6 @@
-__pycache__/
+src/assignment1/__pycache__/
+src/assignment2/__pycache__/
+src/assignment1/logs/
+src/assignment1/data/
 data/
 logs/
