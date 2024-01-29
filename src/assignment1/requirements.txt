@@ -1,0 +1,9 @@
+ipdb
+lxml
+matplotlib
+numpy
+Pillow
+scikit-learn
+scipy
+tensorflow
+xlrd

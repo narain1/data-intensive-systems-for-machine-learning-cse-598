@@ -1,0 +1,15 @@
+* test_identity [DONE]
+* test_add_by_cons [DONE]t
+* test_mul_by_cons [DONE]t
+* test_add_two_var [DONE]s
+* test_mul_two_var [DONE]s
+* test_add_mul_mix_ [DONE]1
+* test_add_mul_mix_ [DONE]1
+* test_add_mul_mix_ [DONE]1
+* test_grad_of_gra [DONE]d
+*test_matmal_two_var [DONE]s
+
+
+add to vimrc
+* set shortmess-=S
+* figure out error in clipboard paste vim

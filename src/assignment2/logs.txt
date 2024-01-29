@@ -1,0 +1,108 @@
+defaultdict(<class 'int'>, {x2: Oneslike(x2)})
+identity test passed
+defaultdict(<class 'int'>, {(x2+5): Oneslike((x2+5))})
+[x2]
+add by const passed
+defaultdict(<class 'int'>, {(x2*5): Oneslike((x2*5))})
+[x2]
+mul by const passed
+defaultdict(<class 'int'>, {(x2+x3): Oneslike((x2+x3))})
+[x2, x3]
+add two vars passed
+defaultdict(<class 'int'>, {(x2*x3): Oneslike((x2*x3))})
+[x2, x3]
+mul two vars passed
+defaultdict(<class 'int'>, {(x1+((x2*x3)*x1)): Oneslike((x1+((x2*x3)*x1)))})
+[x1, ((x2*x3)*x1)]
+[(x2*x3), x1]
+[x2, x3]
+add mul 1 passed
+defaultdict(<class 'int'>, {(x1+((x2*x3)*x4)): Oneslike((x1+((x2*x3)*x4)))})
+[x1, ((x2*x3)*x4)]
+[(x2*x3), x4]
+[x2, x3]
+add mul 2 passed
+defaultdict(<class 'int'>, {((((((x2*x2)+x2)+x3)+3)*((((x2*x2)+x2)+x3)+3))+x3): Oneslike(((((((x2*x2)+x2)+x3)+3)*((((x2*x2)+x2)+x3)+3))+x3))})
+[(((((x2*x2)+x2)+x3)+3)*((((x2*x2)+x2)+x3)+3)), x3]
+[((((x2*x2)+x2)+x3)+3), ((((x2*x2)+x2)+x3)+3)]
+[(((x2*x2)+x2)+x3)]
+[((x2*x2)+x2), x3]
+[(x2*x2), x2]
+[x2, x2]
+add mul 3 passed
+defaultdict(<class 'int'>, {((x2*x2)+(x2*x3)): Oneslike(((x2*x2)+(x2*x3)))})
+[(x2*x2), (x2*x3)]
+[x2, x3]
+[x2, x2]
+defaultdict(<class 'int'>, {(((((Oneslike(((x2*x2)+(x2*x3)))+0)*x3)+0)+((Oneslike(((x2*x2)+(x2*x3)))+0)*x2))+((Oneslike(((x2*x2)+(x2*x3)))+0)*x2)): Oneslike((((((Oneslike(((x2*x2)+(x2*x3)))+0)*x3)+0)+((Oneslike(((x2*x2)+(x2*x3)))+0)*x2))+((Oneslike(((x2*x2)+(x2*x3)))+0)*x2)))})
+[((((Oneslike(((x2*x2)+(x2*x3)))+0)*x3)+0)+((Oneslike(((x2*x2)+(x2*x3)))+0)*x2)), ((Oneslike(((x2*x2)+(x2*x3)))+0)*x2)]
+[(Oneslike(((x2*x2)+(x2*x3)))+0), x2]
+[(((Oneslike(((x2*x2)+(x2*x3)))+0)*x3)+0), ((Oneslike(((x2*x2)+(x2*x3)))+0)*x2)]
+[(Oneslike(((x2*x2)+(x2*x3)))+0), x2]
+[Oneslike(((x2*x2)+(x2*x3)))]
+[((Oneslike(((x2*x2)+(x2*x3)))+0)*x3)]
+[(Oneslike(((x2*x2)+(x2*x3)))+0), x3]
+[Oneslike(((x2*x2)+(x2*x3)))]
+[((x2*x2)+(x2*x3))]
+[(x2*x2), (x2*x3)]
+[x2, x3]
+[x2, x2]
+grad of grad passed
+defaultdict(<class 'int'>, {MatMul(x2,x3,False,False): Oneslike(MatMul(x2,x3,False,False))})
+[x2, x3]
+(MatMul(x2,Oneslike(MatMul(x2,x3,False,False)),True,False)+0)
+matmul passed
+defaultdict(<class 'int'>, {x2: Oneslike(x2)})
+identity test passed
+defaultdict(<class 'int'>, {(x2+5): Oneslike((x2+5))})
+[x2]
+add by const passed
+defaultdict(<class 'int'>, {(x2*5): Oneslike((x2*5))})
+[x2]
+mul by const passed
+defaultdict(<class 'int'>, {(x2+x3): Oneslike((x2+x3))})
+[x2, x3]
+add two vars passed
+defaultdict(<class 'int'>, {(x2*x3): Oneslike((x2*x3))})
+[x2, x3]
+mul two vars passed
+defaultdict(<class 'int'>, {(x1+((x2*x3)*x1)): Oneslike((x1+((x2*x3)*x1)))})
+[x1, ((x2*x3)*x1)]
+[(x2*x3), x1]
+[x2, x3]
+add mul 1 passed
+defaultdict(<class 'int'>, {(x1+((x2*x3)*x4)): Oneslike((x1+((x2*x3)*x4)))})
+[x1, ((x2*x3)*x4)]
+[(x2*x3), x4]
+[x2, x3]
+add mul 2 passed
+defaultdict(<class 'int'>, {((((((x2*x2)+x2)+x3)+3)*((((x2*x2)+x2)+x3)+3))+x3): Oneslike(((((((x2*x2)+x2)+x3)+3)*((((x2*x2)+x2)+x3)+3))+x3))})
+[(((((x2*x2)+x2)+x3)+3)*((((x2*x2)+x2)+x3)+3)), x3]
+[((((x2*x2)+x2)+x3)+3), ((((x2*x2)+x2)+x3)+3)]
+[(((x2*x2)+x2)+x3)]
+[((x2*x2)+x2), x3]
+[(x2*x2), x2]
+[x2, x2]
+add mul 3 passed
+defaultdict(<class 'int'>, {((x2*x2)+(x2*x3)): Oneslike(((x2*x2)+(x2*x3)))})
+[(x2*x2), (x2*x3)]
+[x2, x3]
+[x2, x2]
+defaultdict(<class 'int'>, {(((((Oneslike(((x2*x2)+(x2*x3)))+0)*x3)+0)+((Oneslike(((x2*x2)+(x2*x3)))+0)*x2))+((Oneslike(((x2*x2)+(x2*x3)))+0)*x2)): Oneslike((((((Oneslike(((x2*x2)+(x2*x3)))+0)*x3)+0)+((Oneslike(((x2*x2)+(x2*x3)))+0)*x2))+((Oneslike(((x2*x2)+(x2*x3)))+0)*x2)))})
+[((((Oneslike(((x2*x2)+(x2*x3)))+0)*x3)+0)+((Oneslike(((x2*x2)+(x2*x3)))+0)*x2)), ((Oneslike(((x2*x2)+(x2*x3)))+0)*x2)]
+[(Oneslike(((x2*x2)+(x2*x3)))+0), x2]
+[(((Oneslike(((x2*x2)+(x2*x3)))+0)*x3)+0), ((Oneslike(((x2*x2)+(x2*x3)))+0)*x2)]
+[(Oneslike(((x2*x2)+(x2*x3)))+0), x2]
+[Oneslike(((x2*x2)+(x2*x3)))]
+[((Oneslike(((x2*x2)+(x2*x3)))+0)*x3)]
+[(Oneslike(((x2*x2)+(x2*x3)))+0), x3]
+[Oneslike(((x2*x2)+(x2*x3)))]
+[((x2*x2)+(x2*x3))]
+[(x2*x2), (x2*x3)]
+[x2, x3]
+[x2, x2]
+grad of grad passed
+defaultdict(<class 'int'>, {MatMul(x2,x3,False,False): Oneslike(MatMul(x2,x3,False,False))})
+[x2, x3]
+(MatMul(x2,Oneslike(MatMul(x2,x3,False,False)),True,False)+0)
+matmul passed
