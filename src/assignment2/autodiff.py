@@ -33,10 +33,9 @@ class Node(object):
     def __mul__(self, other):
         """TODO: Your code here"""
         if isinstance(other, Node):
-            new_node = mul_op(self, other)
+            return mul_op(self, other)
         else:
-            new_node = mul_byconst_op(self, other)
-        return new_node
+            return mul_byconst_op(self, other)
 
     # Allow left-hand-side add and multiply.
     __radd__ = __add__
@@ -349,7 +348,7 @@ def gradients(output_node, node_list):
     return grad_node_list
 
 ##############################
-####### Helper Methods ####### 
+####### Helper Methods #######
 ##############################
 
 def find_topo_sort(node_list):
