@@ -54,25 +54,25 @@ __global__ void matrix_softmax_cross_entropy_kernel(int nrow, int ncol,
 
 
 __global__ void ArraySetKernel(int len, float *arr, float value) {
-  int index = blockIdx.x * blockDim.x + threadIdx.x;
-  if (index < len) {
-    arr[index] = value;
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < len) {
+    arr[idx] = value;
   }
 }
 
 __global__ void BroadcastToKernel(int in_threads, int out_threads, const float *input, float *output) {
-  int index = blockIdx.x * blockDim.x + threadIdx.x;
-  if (index < out_threads) {
-    output[index] = input[index % in_threads];
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < out_threads) {
+    output[idx] = input[idx % in_threads];
   }
 }
 
 __global__ void ReduceSumAxisZero(const float *input_data, float *output_data, int rows, int input) {
-  int index = blockIdx.x * blockDim.x + threadIdx.x;
-  if (index < input) {
-    output_data[index] = 0;
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < input) {
+    output_data[idx] = 0;
     for (int i=0; i<rows; i++) {
-      output_data[index] += input_data[i*input+index];
+      output_data[idx] += input_data[i*input+idx];
     }
   }
 }
@@ -87,7 +87,7 @@ __global__ void MatrixElementWiseAddByConst(int input, const float *a, float val
 
 __global__ void MatrixElementWiseAdd(int input, const float *a, const float *b, const float *c) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (index < input) {
+  if (idx < input) {
     c[idx] = a[idx] + b[idx];
   }
 }
@@ -122,6 +122,26 @@ __global__ void ReluGradient(int len, const float *a, const float *g, float *o) 
     o[idx] = max(0.0f, g[idx]);
   }
 }`
+
+
+__global__ void Softmax(const float *a, float *b, int r, int c) {
+  int idx = blockDim.x, blockDim.y * blockIdx.x + threadIdx.y * blockDim.x + threadIdx.x;
+
+  if (idx < r) {
+    a = idx * c;
+    b += idx * c;
+    float maximum = *a;
+    
+    for (int i=1; i<c; i++) {
+      sum += exp(a[i] - maximum);
+    }
+
+    for (int i=0; i<c; i++) {
+      b[i] = exp(a[i] maximum)/sum;
+    }
+  }
+}
+    
 
 
 
