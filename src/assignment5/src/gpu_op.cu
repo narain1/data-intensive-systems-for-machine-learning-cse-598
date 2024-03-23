@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
+#include <math.h>
+#include <float.h>
 
 /* TODO: Your code here */
 /* all your GPU kernel code, e.g. matrix_softmax_cross_entropy_kernel */
@@ -85,7 +87,7 @@ __global__ void MatrixElementWiseAddByConst(int input, const float *a, float val
 }
 
 
-__global__ void MatrixElementWiseAdd(int input, const float *a, const float *b, const float *c) {
+__global__ void MatrixElementWiseAdd(int input, const float *a, const float *b, float *c) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx < input) {
     c[idx] = a[idx] + b[idx];
@@ -121,25 +123,27 @@ __global__ void ReluGradient(int len, const float *a, const float *g, float *o) 
   if (idx < len) {
     o[idx] = max(0.0f, g[idx]);
   }
-}`
+}
 
 
-__global__ void Softmax(const float *a, float *b, int r, int c) {
-  int idx = blockDim.x, blockDim.y * blockIdx.x + threadIdx.y * blockDim.x + threadIdx.x;
+__global__ void Softmax(const float *input, float *output, int r, int c) {
+  int row = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (idx < r) {
-    a = idx * c;
-    b += idx * c;
-    float maximum = *a;
-    
-    for (int i=1; i<c; i++) {
-      sum += exp(a[i] - maximum);
+  if (row < r) {
+    float max_val = -FLT_MAX;
+    for (int i=0; i<c; i++) {
+      max_val = fmaxf(max_val, input[row * c + i]);
+    }
+
+    float sum = 0.0f;
+    for (int i=0; i<c; i++) {
+      sum += expf(input[row * c + i] - max_val);
     }
 
     for (int i=0; i<c; i++) {
-      b[i] = exp(a[i] maximum)/sum;
+      output[row*c+i] = expf(input[row*c+i] - max_val) / sum;
     }
-  }
+  } 
 }
     
 
@@ -149,13 +153,13 @@ int DLGpuArraySet(DLArrayHandle arr, float value) { /* TODO: Your code here */
   int threads_per_block = 1024;
   int number_of_threads = 1;
   for (int i=0; i<arr->ndim; i++) {
-    number_of_threads = num,number_of_threads * arr->shape[i];
+    number_of_threads = number_of_threads * arr->shape[i];
   }
   float *data = (float *)arr->data;
   dim3 threads, blocks;
   if (number_of_threads <= threads_per_block) {
     threads.x = number_of_threads;
-    block.x = 1;
+    blocks.x = 1;
   }
   else {
     threads.x = threads_per_block;
@@ -222,8 +226,8 @@ int DLGpuMatrixElementwiseAdd(const DLArrayHandle matA,
   int number_of_threads = 1;
   int threads_per_block = 1024;
   dim3 threads, blocks;
-  for (int i=0; i<matA->ndim, i++){
-    number_of_threads = num * matA->shape[i];
+  for (int i=0; i<matA->ndim; i++){
+    number_of_threads = number_of_threads * matA->shape[i];
   }
   const float *a = (const float *)matA->data;
   const float *b = (const float *)matB->data;
@@ -247,10 +251,11 @@ int DLGpuMatrixElementwiseAddByConst(const DLArrayHandle input, float val,
   int threads_per_block = 1024;
   dim3 threads, blocks;
 
-  for (i=0; i<matA->ndim; i++) {
-    number_of_threads = number_of_threads * matA->shape[i];
+  for (int i=0; i<input->ndim; i++) {
+    number_of_threads = number_of_threads * input->shape[i];
   }
-  const float *a = (const float *)matA->data;
+
+  const float *a = (const float *)input->data;
   float *o = (float *)output->data;
   if (number_of_threads <= threads_per_block) {
     threads.x = number_of_threads;
@@ -295,20 +300,24 @@ int DLGpuMatrixMultiplyByConst(const DLArrayHandle input, float val,
   /* TODO: Your code here */
   int number_of_threads = 1;
   int threads_per_block = 1024;
-  dim3 = threads, blocks;
-  for (int i=0; i<matA->ndim; i++) {
-    number_of_threads = number_of_threads * matA->shape[i]'
+  dim3 threads, blocks;
+
+  for (int i=0; i<input->ndim; i++) {
+    number_of_threads = number_of_threads * input->shape[i];
   }
-  const float *a = (const float *a)matA->data;
-  float *o = (float *)matB->data;
+
+  const float *a = (const float *)input->data;
+  float *o = (float *)input->data;
+
   if (number_of_threads <= threads_per_block) {
     threads.x = number_of_threads;
     blocks.x = 1;
   }
   else {
     threads.x = threads_per_block;
-    blocks.x = (number_of_threads * threads_per_block - 1)/threads_per_block;
+    blocks.x = (number_of_threads + threads_per_block - 1) / threads_per_block;
   }
+
   MatrixElementWiseMultiplyConst<<<blocks, threads>>>(number_of_threads, a, val, o);
   return 0;
 }
@@ -333,7 +342,8 @@ int DLGpuMatrixMultiply(const DLArrayHandle matA, bool transposeA,
   cublasSgemm(handle, 
       transposeB ? CUBLAS_OP_T : CUBLAS_OP_N, 
       transposeA ? CUBLAS_OP_T : CUBLAS_OP_N, 
-      i, j, k, &alpha, matrixA,
+      i, j, k, &alpha, matrixB,
+      transposeB ? k : i, matrixA,
       transposeA ? j : k, &beta, matrixC, i);
   return 0;
 }
@@ -372,7 +382,7 @@ int DLGpuReluGradient(const DLArrayHandle input, const DLArrayHandle in_grad,
   }
   const float *a = (const float *)input->data;
   const float *g = (const float *)in_grad->data;
-  float *output_data = (float *)o->data;
+  float *output_data = (float *)output->data;
   dim3 blocks, threads;
   if (number_of_threads <= threads_per_block) {
     threads.x = number_of_threads;
@@ -382,7 +392,7 @@ int DLGpuReluGradient(const DLArrayHandle input, const DLArrayHandle in_grad,
     threads.x = threads_per_block;
     blocks.x = (number_of_threads + threads_per_block - 1)/threads_per_block;
   }
-  relu
+  ReluGradient<<<blocks, threads>>>(number_of_threads, a, g, output_data);
   return 0;
 }
 
@@ -405,7 +415,7 @@ int DLGpuSoftmax(const DLArrayHandle input, DLArrayHandle output) {
     threads.y = (r + threads_per_block - 1)/threads_per_block;
   }
 
-  Softmax<<<1, threads, r * sizeof(float)>>>(input_data, output_data, r, c);
+  Softmax<<<1, threads, r * sizeof(float)>>>(input_data, o, r, c);
   return 0;
 }
 
