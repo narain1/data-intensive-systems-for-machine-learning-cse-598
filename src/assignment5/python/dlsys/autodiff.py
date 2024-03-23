@@ -197,7 +197,9 @@ class MulOp(Op):
     def compute(self, node, input_vals, output_val, use_numpy=True):
         assert len(input_vals) == 2
         if use_numpy:
-            output_val[:] = input_vals[0] * input_vals[1]
+            # print(input_vals[1])
+            # print(output_val)
+            output_val = input_vals[0] * input_vals[1][0]
         else:
             if input_vals[0].shape == input_vals[1].shape:
                 gpu_op.matrix_elementwise_multiply(
@@ -218,7 +220,7 @@ class MulOp(Op):
     def infer_shape(self, node, input_shapes):
         """Need to handle input_vals[0].shape != input_vals[1].shape"""
         """TODO: Your code here"""
-        assert input_vals[0].shape != input_vals[1].shape
+        # assert input_vals[0].shape != input_vals[1].shape
         if input_shapes[0][0] or input_shapes[0][1]:
             return input_shapes[1]
         else:
@@ -259,6 +261,7 @@ class MatMulOp(Op):
         return new_node
 
     def compute(self, node, input_vals, output_val, use_numpy=True):
+        print(output_val.shape)
         if use_numpy:
             if ((node.matmul_attr_trans_A is False) and
                     (node.matmul_attr_trans_B is False)):
@@ -413,9 +416,13 @@ class ReduceSumAxisZeroOp(Op):
         """
         """TODO: Your code here"""
         s = (1,)
-        for i in range(len(input_shapes[0]) -1):
-            shape += (input_shapes[i+1],)
-        return shape
+        if len(input_shapes[0]) > 1:
+            # print(input_shapes)
+            for i in range(len(input_shapes[0]) -1):
+                s += (input_shapes[0][i+1],)
+            return s
+        else:
+            return s
 
 
 class BroadcastToOp(Op):
