@@ -72,8 +72,8 @@ __global__ void BroadcastToKernel(int in_threads, int out_threads, const float *
 __global__ void ReduceSumAxisZero(const float *input_data, float *output_data, int rows, int input) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx < input) {
-    output_data[idx] = 0;
-    for (int i=0; i<rows; i++) {
+    output_data[idx] = 0.0f;
+    for (int i=0; i<rows/input; i++) {
       output_data[idx] += input_data[i*input+idx];
     }
   }
@@ -121,12 +121,6 @@ __global__ void reluKernel(int numElements, const float *a, float *o) {
 __global__ void ReluGradient(int numElements, const float *a, const float *g, float *o) {
   int idx = blockIdx.x + blockDim.x + threadIdx.x;
   if (idx < numElements) {
-    // if (a[idx] > 0) {
-    //   o[idx] = g[idx];
-    // }
-    // else {
-    //   o[idx] = 0;
-    // }
     o[idx] = (a[idx] > 0) ? g[idx] : 0;
   }
 }
@@ -156,22 +150,14 @@ __global__ void Softmax(const float *input, float *output, int r, int c) {
 
 
 int DLGpuArraySet(DLArrayHandle arr, float value) { /* TODO: Your code here */
-  int threads_per_block = 1024;
-  int number_of_threads = 1;
+  int threads_per_block = 512;
+  index_t number_of_threads = 1;
   for (int i=0; i<arr->ndim; i++) {
     number_of_threads = number_of_threads * arr->shape[i];
   }
   float *data = (float *)arr->data;
-  dim3 threads, blocks;
-  if (number_of_threads <= threads_per_block) {
-    threads.x = number_of_threads;
-    blocks.x = 1;
-  }
-  else {
-    threads.x = threads_per_block;
-    blocks.x = (number_of_threads + threads_per_block - 1) / threads_per_block;
-  }
-  ArraySetKernel<<<blocks, threads>>>(number_of_threads, data, value);
+  int blocks = (n + threads_per_block -1) / threads_per_block;
+  ArraySetKernel<<<blocks, threads_per_block>>>(number_of_threads, data, value);
   return 0;
 }
 
@@ -179,7 +165,7 @@ int DLGpuBroadcastTo(const DLArrayHandle input, DLArrayHandle output) {
   /* TODO: Your code here */
   int in_threads = 1;
   int out_threads = 1;
-  int threads_per_block = 1024;
+  int threads_per_block = 512;
   for (int i=0; i<input->ndim; i++) {
     in_threads = in_threads * input->shape[i];
   }
@@ -188,90 +174,62 @@ int DLGpuBroadcastTo(const DLArrayHandle input, DLArrayHandle output) {
   }
   const float *input_data = (const float*)input->data;
   float *output_data = (float*)output->data;
-  dim3 threads, blocks;
-  if (in_threads <= threads_per_block) {
-    threads.x = in_threads;
-    blocks.x = 1;
-  }
-  else {
-    threads.x = threads_per_block;
-    blocks.x = (out_threads + threads_per_block - 1) / threads_per_block;
-  }
-  BroadcastToKernel<<<blocks, threads>>>(in_threads, out_threads, input_data, output_data);
+  int n_blocks = (out_threads + threads_per_block - 1) / threads_per_block;
+  BroadcastToKernel<<<n_blocks, threads_per_block>>>(in_threads, out_threads, input_data, output_data);
   return 0;
 }
 
 
 int DLGpuReduceSumAxisZero(const DLArrayHandle input, DLArrayHandle output) {
   /* TODO: Your code here */
-  int number_of_threads = 1;
-  int threads_per_block = 1024;
+  int threads_per_block = 512;
 
-  for (int i=1; i<input->ndim; i++) {
-    number_of_threads = number_of_threads * input->shape[i];
+  index_t input_n = 1, output_n = 1;
+  for (int i=0; i<input->ndim; i++) {
+    input_n *= input->shape[i]
   }
 
-  dim3 threads, blocks;
-  float *output_data = (float*)output->data;
+  for (int i=0; i<output->ndim; i++) {
+    output_n *= output->shape[i];
+  }
+
   const float *input_data = (const float*)input->data;
-  if (number_of_threads <= threads_per_block) {
-    threads.x = number_of_threads;
-    blocks.x = 1;
-  }
-  else {
-    threads.x = threads_per_block;
-    blocks.x = (number_of_threads + threads_per_block - 1)/threads_per_block;
-  }
-  ReduceSumAxisZero<<<blocks, threads>>>(input_data, output_data, input->shape[0], number_of_threads);
+  float *output_data = (float*)output->data;
+  int n_blocks = (output_n + threads_per_block - 1) / threads_per_block;
+  ReduceSumAxisZero<<<n_blocks, threads_per_block>>>(input_data, output_data, input_n, output_n);
   return 0;
 }
 
 int DLGpuMatrixElementwiseAdd(const DLArrayHandle matA,
                               const DLArrayHandle matB, DLArrayHandle output) {
   /* TODO: Your code here */
-  int number_of_threads = 1;
-  int threads_per_block = 1024;
-  dim3 threads, blocks;
-  for (int i=0; i<matA->ndim; i++){
-    number_of_threads = number_of_threads * matA->shape[i];
+  index_t n = 1;
+  for (int i=0; i<output->ndim; i++) {
+    n *= output->shape[i];
   }
-  const float *a = (const float *)matA->data;
-  const float *b = (const float *)matB->data;
+
+  const float *matA_data = (const float*)matA->data;
+  const float *matB_data = (const float*)matB->data;
   float *output_data = (float*)output->data;
-  if (number_of_threads <= threads_per_block) {
-    threads.x = number_of_threads;
-    blocks.x = 1;
-  }
-  else {
-    threads.x = threads_per_block;
-    blocks.x = (number_of_threads + threads_per_block - 1)/threads_per_block;
-  }
-  MatrixElementWiseAdd<<<blocks, threads>>>(number_of_threads, a, b, output_data);
+
+  int threads_per_block = 512;
+  int n_blocks = (n + threads_per_block - 1) / threads_per_block;
+  MatrixElementWiseAdd<<<n_blocks, threads_per_block>>>(number_of_threads, matA_data, matB_data, output_data);
   return 0;
 }
 
 int DLGpuMatrixElementwiseAddByConst(const DLArrayHandle input, float val,
                                      DLArrayHandle output) {
   /* TODO: Your code here */
-  int number_of_threads = 1;
-  int threads_per_block = 1024;
-  dim3 threads, blocks;
-
-  for (int i=0; i<input->ndim; i++) {
-    number_of_threads = number_of_threads * input->shape[i];
-  }
-
-  const float *a = (const float *)input->data;
-  float *o = (float *)output->data;
-  if (number_of_threads <= threads_per_block) {
-    threads.x = number_of_threads;
-    blocks.x = 1;
-  }
-  else {
-    threads.x = threads_per_block;
-    blocks.x = (number_of_threads + threads_per_block - 1)/threads_per_block;
-  }
-  MatrixElementWiseAddByConst<<<blocks, threads>>>(number_of_threads, a, val, o);
+  index_t n = 1;
+  for (int i=0; i<output->ndim; i++)
+    n *= output->shape[i];
+  
+  const float *input_data = (const float *)input->data;
+  float *output_data = (float *)output->data;
+  int threads_per_block = 512;
+  int n_blocks = (n + threads_per_block - 1)/threads_per_block;
+  MatrixElementWiseAddByConst<<<n_blocks, threads_per_block>>>(number_of_threads, input_data, val, output_data);
   return 0;
 }
 
@@ -279,52 +237,32 @@ int DLGpuMatrixElementwiseMultiply(const DLArrayHandle matA,
                                    const DLArrayHandle matB,
                                    DLArrayHandle output) {
   /* TODO: Your code here */
-  int number_of_threads = 1;
-  int threads_per_block = 1024;
-  dim3 threads, blocks;
-
-  for (int i=0; i< matA->ndim; i++) {
-    number_of_threads = number_of_threads * matA->shape[i];
-  }
-  const float *a = (const float *)matA->data;
-  const float *b = (const float *)matB->data;
-  float *o = (float *)output->data;
-  if (number_of_threads <= threads_per_block) {
-    threads.x = number_of_threads;
-    blocks.x = 1;
-  }
-  else {
-    threads.x = threads_per_block;
-    blocks.x = (number_of_threads + threads_per_block - 1) / threads_per_block;
-  }
-  MatrixElementWiseMultiply<<<blocks, threads>>>(number_of_threads, a, b, o);
+  index_t n = 1;
+  for (int i=0; i<output->ndim; i++)
+    n *= output->shape[i];
+  
+  const float *matA_data = (const float*)matA->data;
+  const float *matB_data = (const float*)matB->data;
+  float *output_data = (float*)output->data;
+  int threads_per_block = 512;
+  int n_blocks = (n + threads_per_block - 1) / threads_per_block;
+  MatrixElementWiseMultiply<<<n_blocks, threads_per_block>>>(n, matA_data, matB_data, output_data);
   return 0;
 }
 
 int DLGpuMatrixMultiplyByConst(const DLArrayHandle input, float val,
                                DLArrayHandle output) {
   /* TODO: Your code here */
-  int number_of_threads = 1;
-  int threads_per_block = 1024;
-  dim3 threads, blocks;
+  index_t n = 1;
+  for (int i=0; i<output->ndim; i++)
+    n *= output->shape[i];
+  
+  const float *input_data = (const float *)input->data;
+  float *output_data = (float *)output->data;
+  int threads_per_block = 512;
+  int n_blocks = (n + threads_per_block - 1) / threads_per_block;
 
-  for (int i=0; i<input->ndim; i++) {
-    number_of_threads = number_of_threads * input->shape[i];
-  }
-
-  const float *a = (const float *)input->data;
-  float *o = (float *)output->data;
-
-  if (number_of_threads <= threads_per_block) {
-    threads.x = number_of_threads;
-    blocks.x = 1;
-  }
-  else {
-    threads.x = threads_per_block;
-    blocks.x = (number_of_threads + threads_per_block - 1) / threads_per_block;
-  }
-
-  MatrixElementWiseMultiplyConst<<<blocks, threads>>>(number_of_threads, a, val, o);
+  MatrixElementWiseMultiplyConst<<<n_blocks, threads_per_block>>>(n, input_data, val, output_data);
   return 0;
 }
 
@@ -335,22 +273,34 @@ int DLGpuMatrixMultiply(const DLArrayHandle matA, bool transposeA,
   // Hint: use cublas
   // cublas assume matrix is column major
   cublasHandle_t handle;
-  if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
-    return 0;
-  }
-  const float *matrixA = (const float *)matA->data;
-  const float *matrixB = (const float *)matB->data;
-  float *matrixC = (float *)matC->data;
-  int i = matC->shape[1];
-  int j = matC->shape[0];
+  cublasStatus_t stat = cublasCreat e(&handle);
+  if (stat != CUBLAS_STATUS_SUCCESS) 
+    printf("CUBLAS initialization failed\n");
+
+  const float *matA_data = (const float*)matA->data;
+  const float *matB_data = (const float*)matB->data;
+  float *matC_data = (float *)matC->data;
+
+  cublasOperation_t transa = transposeA ? CUBLAS_OP_T : CUBLAS_OP_N;
+  cublasOperation_t transb = trasnposeB ? CUBLAS_OP_T : CUBLAS_OP_N;
+
+  int m = transposeB ?  matB->shape[0] : matB->shape[1];
+  int n = transposeA ? matA->shape[1] : matA->shape[0];
   int k = transposeA ? matA->shape[0] : matA->shape[1];
-  float alpha = 1.0, beta = 0.0;
-  cublasSgemm(handle, 
-      transposeB ? CUBLAS_OP_T : CUBLAS_OP_N, 
-      transposeA ? CUBLAS_OP_T : CUBLAS_OP_N, 
-      i, j, k, &alpha, matrixB,
-      transposeB ? k : i, matrixA,
-      transposeA ? j : k, &beta, matrixC, i);
+
+  float alpha = 1.0f;
+  float beta = 0.0f;
+  stat = cublasSgemm(handle, transb, transa,
+                    m, n, k, &alpha, matB_data,
+                    matB->shape[1], matA_data, matA->shape[1],
+                    &beta, matC_data, m);
+
+  if (stat != CUBLAS_STATUS_SUCCESS) 
+    printf("CUBLAS kernel execution error");
+
+  stat = cublasDestroy(handle);
+  if (stat != CUBLAS_STATUS_SUCCESS) 
+    printf("CUBLAS shutdown error\n");
   return 0;
 }
 
@@ -358,70 +308,43 @@ int DLGpuMatrixMultiply(const DLArrayHandle matA, bool transposeA,
 
 int DLGpuRelu(const DLArrayHandle input, DLArrayHandle output) {
   /* TODO: Your code here */
-  int number_of_threads = 1;
-  int threads_per_block = 1024;
-  for (int i=0; i<input->ndim; i++) {
-    number_of_threads = number_of_threads * input->shape[i];
-  }
-  const float *a = (const float *)input->data;
-  float *o = (float*)output->data;
-  dim3 blocks, threads;
-  if (number_of_threads <= threads_per_block) {
-    threads.x = number_of_threads;
-    blocks.x = 1;
-  }
-  else {
-    threads.x = threads_per_block;
-    blocks.x = (number_of_threads + threads_per_block - 1)/threads_per_block;
-  }
-  reluKernel<<<blocks, threads>>>(number_of_threads, a, o);
+  index_t n = 1;
+  for (int i=0; i<output->ndim; i++)
+    n *= output->shape[i];
+  
+  const float *input_data = (const float*)input->data;
+  float *output_data = (float *)output->data;
+  int threads_per_block = 512;
+  int n_blocks = (n + threads_per_block - 1) / threads_per_block;
+  reluKernel<<<n_blocks, threads_per_block>>>(n, input_data, output_data);
   return 0;
 }
 
 int DLGpuReluGradient(const DLArrayHandle input, const DLArrayHandle in_grad,
                       DLArrayHandle output) {
   /* TODO: Your code here */
-  int number_of_threads = 1;
-  int threads_per_block = 1024;
-  for (int i=0; i<input->ndim; i++) {
-    number_of_threads = number_of_threads * input->shape[i];
-  }
-  const float *a = (const float *)input->data;
-  const float *g = (const float *)in_grad->data;
-  float *output_data = (float *)output->data;
-  dim3 blocks, threads;
-  if (number_of_threads <= threads_per_block) {
-    threads.x = number_of_threads;
-    blocks.x = 1;
-  }
-  else {
-    threads.x = threads_per_block;
-    blocks.x = (number_of_threads + threads_per_block - 1)/threads_per_block;
-  }
-  ReluGradient<<<blocks, threads>>>(number_of_threads, a, g, output_data);
+  index_t n = 1;
+  for (int i=0; i<input->ndim; i++)
+    n *= input->shape[i];
+  
+  const float *input_data = (const float*)input->data;
+  const float *in_grad_data = (const float*)in_grad->data;
+  float *output_data = (float*)output->data;
+
+  int threads_per_block = 512;
+  int n_blocks = (n + threads_per_block - 1) / threads_per_block;
+  ReluGradient<<<n_blocks, threads_per_block>>>(n, input_data, in_grad_data, output_data);
   return 0;
 }
 
 
 int DLGpuSoftmax(const DLArrayHandle input, DLArrayHandle output) {
   /* TODO: Your code here */
-  int r,c;
-  dim3  threads;
-  int threads_per_block = 1024;
-  r = input->shape[0];
-  c = input->shape[1];
+  const float *input_data = (const float*)input->data;
+  float *output_data = (float*)output->data;
+  int n_blocks = output->shape[0];
 
-  const float *input_data = (const float *)input->data;
-  float *o = (float *)output->data;
-  if (r <= threads_per_block) {
-    threads.x = r;
-  }
-  else {
-    threads.x = threads_per_block;
-    threads.y = (r + threads_per_block - 1)/threads_per_block;
-  }
-
-  Softmax<<<1, threads, r * sizeof(float)>>>(input_data, o, r, c);
+  Softmax<<<n_blocks, 1>>>(input_data, output_data, output->shape[0], output->shape[1]);
   return 0;
 }
 
