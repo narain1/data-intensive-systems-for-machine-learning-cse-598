@@ -55,9 +55,9 @@ __global__ void matrix_softmax_cross_entropy_kernel(int nrow, int ncol,
 }
 
 
-__global__ void ArraySetKernel(int len, float *arr, float value) {
+__global__ void ArraySetKernel(int numElements, float *arr, float value) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < len) {
+  if (idx < numElements) {
     arr[idx] = value;
   }
 }
@@ -79,49 +79,55 @@ __global__ void ReduceSumAxisZero(const float *input_data, float *output_data, i
   }
 }
 
-__global__ void MatrixElementWiseAddByConst(int input, const float *a, float val, float *c) {
+__global__ void MatrixElementWiseAddByConst(int numElements, const float *a, float val, float *c) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < input) {
-    c[idx] = a[idx] * val;
+  if (idx < numElements) {
+    c[idx] = a[idx] + val;
   }
 }
 
 
-__global__ void MatrixElementWiseAdd(int input, const float *a, const float *b, float *c) {
+__global__ void MatrixElementWiseAdd(int numElements, const float *a, const float *b, float *c) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < input) {
+  if (idx < numElements) {
     c[idx] = a[idx] + b[idx];
   }
 }
 
 
-__global__ void MatrixElementWiseMultiply(int input, const float *a, const float *b, float *o) {
+__global__ void MatrixElementWiseMultiply(int numElements, const float *a, const float *b, float *o) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < input) {
+  if (idx < numElements) {
     o[idx] = a[idx] * b[idx];
   }
 }
 
 
-__global__ void MatrixElementWiseMultiplyConst(int input, const float *a, float val, float *o) {
+__global__ void MatrixElementWiseMultiplyConst(int numElements, const float *a, float val, float *o) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < input) {
+  if (idx < numElements) {
     o[idx] = a[idx] * val;
   }
 }
 
 
 __global__ void reluKernel(int numElements, const float *a, float *o) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < numElements) {
-        o[i] = max(0.0f, a[i]);
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < numElements) {
+        o[idx] = max(0.0f, a[idx]);
     }
 }
 
-__global__ void ReluGradient(int len, const float *a, const float *g, float *o) {
+__global__ void ReluGradient(int numElements, const float *a, const float *g, float *o) {
   int idx = blockIdx.x + blockDim.x + threadIdx.x;
-  if (idx < len) {
-    o[idx] = max(0.0f, g[idx]);
+  if (idx < numElements) {
+    // if (a[idx] > 0) {
+    //   o[idx] = g[idx];
+    // }
+    // else {
+    //   o[idx] = 0;
+    // }
+    o[idx] = (a[idx] > 0) ? g[idx] : 0;
   }
 }
 
@@ -307,7 +313,7 @@ int DLGpuMatrixMultiplyByConst(const DLArrayHandle input, float val,
   }
 
   const float *a = (const float *)input->data;
-  float *o = (float *)input->data;
+  float *o = (float *)output->data;
 
   if (number_of_threads <= threads_per_block) {
     threads.x = number_of_threads;

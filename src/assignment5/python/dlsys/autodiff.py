@@ -261,7 +261,7 @@ class MatMulOp(Op):
         return new_node
 
     def compute(self, node, input_vals, output_val, use_numpy=True):
-        print(output_val.shape)
+        # print(output_val.shape)
         if use_numpy:
             if ((node.matmul_attr_trans_A is False) and
                     (node.matmul_attr_trans_B is False)):
@@ -549,6 +549,7 @@ class ReluGradientOp(Op):
             # heaviside function, 0.5 at x=0
             output_val[:] = (np.sign(input_vals[0]) + 1) * 0.5 * input_vals[1]
         else:
+            print(input_vals[0], "\n\n", input_vals[1])
             gpu_op.relu_gradient(input_vals[0], input_vals[1], output_val)
 
     def gradient(self, node, output_grad):
@@ -635,10 +636,13 @@ class Executor(object):
         """
         """TODO: Your code here"""
         self.node_to_arr_map = {}
+        # print(self.topo_order)
+        # print(feed_shapes)
         for node in self.topo_order:
-            if node not in feed_shapes:
+            if node in feed_shapes:
                 shape = self.node_to_shape_map[node]
                 self.node_to_arr_map[node] = ndarray.empty(shape, ctx=self.ctx)
+        # print(self.node_to_arr_map)
 
 
     def run(self, feed_dict, convert_to_numpy_ret_vals=False):
@@ -698,6 +702,7 @@ class Executor(object):
             if use_numpy:
                 node_val = np.empty(shape=self.node_to_shape_map[node])
             else:
+                # print(self.node_to_arr_map)
                 node_val = self.node_to_arr_map[node]
             # node_val is modified in-place whether np.ndarray or NDArray
             node.op.compute(node, input_vals, node_val, use_numpy)
