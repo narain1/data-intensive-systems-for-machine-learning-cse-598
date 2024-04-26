@@ -11,3 +11,68 @@ logs/
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Scala and sbt related
+*.class
+*.log
+
+# sbt specific
+assignment8/lib_managed/
+assignment8/.bsp
+assignment8/project
+assignment8/target
+src_managed/
+project/boot/
+project/plugins/project/
+target/
+dist/*
+
+# Worksheets (Scala IDE and IntelliJ)
+*.sc
+
+# Eclipse files
+.buildpath
+.project
+.settings/
+
+# IntelliJ IDEA files
+.idea/
+*.iml
+*.iws
+*out/
+
+# VSCode files
+.vscode/
+
+# Mac OS folder attribute files
+.DS_Store
+
+# Temporary files
+tmp/
+temp/
+
+# Logs
+logs/
+*.log
+
+# Others
+caches/
+.history
+.repl/
+
+# Packaging
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Ensime (older Scala IDE tooling)
+.ensime
+.ensime_cache
+.ensime_lucene
+
+# Metals (Scala language server) artifacts
+.metals/
+.bloop/
