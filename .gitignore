@@ -19,8 +19,8 @@ __pycache__/
 # sbt specific
 assignment8/lib_managed/
 assignment8/.bsp
-assignment8/project
-assignment8/target
+src/assignment8/scala/project
+src/assignment8/scala/target
 src_managed/
 project/boot/
 project/plugins/project/
