@@ -1,0 +1,5 @@
+hand coded matrix multiplication 22.883625182 seconds.
+
+breeze implementation of matrix multiplication 26.821 s
+
+scala implementation  30.775279475 seconds
